@@ -1,122 +1,100 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
-
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+import Todo from "./components/todo";
+import Form from "./components/form";
+import FilterButton from "./components/filterbutton";
+import { useState, useRef, useEffect} from "react";
+import { nanoid } from "nanoid";
+function usePrevious(value) {
+  const ref = useRef();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
+}
+ const FILTER_MAP = {
+  All: () => true,
+  Active: (task) => !task.completed,
+  Completed: (task) => task.completed,
+};
+const FILTER_NAMES = Object.keys(FILTER_MAP);
+function App(props) {
+  const [tasks, setTasks] = useState(props.tasks)
+  const [filter, setFilter] = useState("All")
+ 
+const tasklist = tasks?.filter(FILTER_MAP[filter]).map((task)=>(<Todo name = {task.name} id={task.id} key={task.id}completed={task.completed}toggleTaskComplete={toggleTaskComplete} deleteTask={deleteTask} editTask={editTask}/>))
+const filterList = FILTER_NAMES.map((name) => (
+  <FilterButton key={name} name={name} isPressed={name === filter} setFilter={setFilter}/>
+));
+function editTask(id, newName) {
+  const editedTaskList = tasks.map((task) => {
+    // if this task has the same ID as the edited task
+    if (id === task.id) {
+      // Copy the task and update its name
+      return { ...task, name: newName };
+    }
+    // Return the original task if it's not the edited task
+    return task;
+  });
+  setTasks(editedTaskList);
 }
 
-export default App
+function addTask(name) {
+  if(name === ""){
+    alert("Please fill in the field")
+    return
+  }
+  const newTask = {
+    id:`todo-${nanoid()}`,
+    name:name,
+    completed:false
+  }
+  
+  setTasks([...tasks,newTask])
+
+}
+function toggleTaskComplete(id) {
+  const updatedTaskList = tasks.map((task)=>{
+    if (id == task.id){
+      return{...task, completed:!task.completed}
+    }
+    return task
+  })
+  setTasks(updatedTaskList)
+  
+}
+function deleteTask(id) {
+  const updatedTask = tasks.filter((task) =>{
+    if (id !== task.id){
+      return task
+    }
+  })
+ setTasks(updatedTask)
+}
+
+const headingtText = `${tasklist.length} ${tasklist.length !==1 ? "tasks":"task"} remaining`;
+const listHeadingRef = useRef(null);
+const prevTaskLength = usePrevious(tasks.length);
+useEffect(() => {
+  if (tasks.length < prevTaskLength) {
+    listHeadingRef.current.focus();
+  }
+}, [tasks.length, prevTaskLength]);
+  return (
+    <div className="todoapp stack-large">
+      <h1>TodoMatic</h1>
+      <Form addTask={addTask}/>
+      <div className="filters btn-group stack-exception">
+        
+      {filterList}
+      </div>
+      <h2 id="list-heading" tabIndex="-1" ref={listHeadingRef}>{headingtText}</h2>
+      <ul
+  role="list"
+  className="todo-list stack-large stack-exception"
+  aria-labelledby="list-heading">
+  {tasklist}
+</ul>
+    </div>
+  );
+}
+
+export default App;
